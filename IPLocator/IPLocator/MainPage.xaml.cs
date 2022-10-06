@@ -13,12 +13,7 @@ public partial class MainPage : ContentPage
 	{
 		InitializeComponent();
         Connectivity.ConnectivityChanged += (o, e) => GetAndUpdateIP();
-	}
-
-    protected override void OnAppearing()
-    {
-        base.OnAppearing();
-		GetAndUpdateIP();
+        GetAndUpdateIP();
         UpdateCredential();
     }
 
