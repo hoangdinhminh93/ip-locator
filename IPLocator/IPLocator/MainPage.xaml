@@ -9,21 +9,6 @@
             Padding="30,0"
             VerticalOptions="Center">
 
-            <VerticalStackLayout Spacing="6" Padding="30,0">
-                <Label
-                    Text="Username:" />
-                <Entry
-                    x:Name="usernameEntry" />
-            </VerticalStackLayout>
-
-            <VerticalStackLayout Spacing="6" Padding="30,0">
-                <Label
-                    Text="Password:" />
-                <Entry
-                    x:Name="passwordEntry"
-                    IsPassword="True" />
-            </VerticalStackLayout>
-
             <Image
                 Source="dotnet_bot.png"
                 SemanticProperties.Description="Cute dot net bot waving hi to you!"
@@ -44,11 +29,33 @@
                 FontSize="18"
                 HorizontalOptions="Center" />
 
-            <Button
-                Text="Refresh"
-                SemanticProperties.Hint="Counts the number of times you click"
-                Clicked="OnCounterClicked"
-                HorizontalOptions="Center" />
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="8">
+                <Button
+                    Text="Refresh"
+                    WidthRequest="100"
+                    Clicked="OnRefreshClicked" />
+
+                <Button
+                    x:Name="credentialButton"
+                    WidthRequest="100"
+                    Clicked="OnCredentialButtonClicked" />
+            </HorizontalStackLayout>
+
+            <VerticalStackLayout
+                x:Name="credentialStack"
+                Spacing="6"
+                Padding="30,0">
+                <Label
+                    Text="Username:" />
+                <Entry
+                    x:Name="usernameEntry" />
+
+                <Label
+                    Text="Password:" />
+                <Entry
+                    x:Name="passwordEntry"
+                    IsPassword="True" />
+            </VerticalStackLayout>
 
         </VerticalStackLayout>
     </ScrollView>

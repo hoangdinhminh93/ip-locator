@@ -7,6 +7,8 @@ namespace IPLocator;
 
 public partial class MainPage : ContentPage
 {
+    private bool showCredential = false;
+
 	public MainPage()
 	{
 		InitializeComponent();
@@ -17,11 +19,24 @@ public partial class MainPage : ContentPage
     {
         base.OnAppearing();
 		GetAndUpdateIP();
+        UpdateCredential();
     }
 
-    private void OnCounterClicked(object sender, EventArgs e)
+    private void OnCredentialButtonClicked(object sender, EventArgs e)
+    {
+        showCredential = !showCredential;
+        UpdateCredential();
+    }
+
+    private void OnRefreshClicked(object sender, EventArgs e)
 	{
 		GetAndUpdateIP();
+    }
+
+    private void UpdateCredential()
+    {
+        credentialStack.IsVisible = showCredential;
+        credentialButton.Text = showCredential ? "Save" : "Change";
     }
 
 	private async void GetAndUpdateIP()
