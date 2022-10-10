@@ -8,13 +8,21 @@ namespace IPLocator;
 public partial class MainPage : ContentPage
 {
     private bool showCredential = false;
+    private string previousIP;
 
 	public MainPage()
 	{
 		InitializeComponent();
         Connectivity.ConnectivityChanged += (o, e) => GetAndUpdateIP();
-        GetAndUpdateIP();
-        UpdateCredential();
+        Task.Run(async () =>
+        {
+            while (true)
+            {
+                GetAndUpdateIP();
+                UpdateCredential();
+                await Task.Delay(new TimeSpan(0, 15, 0));
+            }
+        });
     }
 
     private void OnCredentialButtonClicked(object sender, EventArgs e)
@@ -53,6 +61,11 @@ public partial class MainPage : ContentPage
                 return;
             }
             ipLabel.Text = ip;
+
+            // Check previous ip
+            if (previousIP == ip)
+                return;
+            previousIP = ip;
 
             // Check username and password for publishing
             if (string.IsNullOrEmpty(usernameEntry.Text) || string.IsNullOrEmpty(passwordEntry.Text))
