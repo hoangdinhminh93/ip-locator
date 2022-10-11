@@ -13,13 +13,13 @@ public partial class MainPage : ContentPage
 	public MainPage()
 	{
 		InitializeComponent();
+        UpdateCredential();
         Connectivity.ConnectivityChanged += (o, e) => GetAndUpdateIP();
         Task.Run(async () =>
         {
             while (true)
             {
                 GetAndUpdateIP();
-                UpdateCredential();
                 await Task.Delay(new TimeSpan(0, 15, 0));
             }
         });
@@ -48,9 +48,12 @@ public partial class MainPage : ContentPage
         {
             // Check internet connectivity
             if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
+            {
+                previousIP = null;
                 return;
+            }
 
-			// Get IP
+            // Get IP
             var ipList = GetIP(NetworkInterfaceType.Wireless80211);
             var ip = ipList.FirstOrDefault();
 
@@ -71,17 +74,13 @@ public partial class MainPage : ContentPage
             if (string.IsNullOrEmpty(usernameEntry.Text) || string.IsNullOrEmpty(passwordEntry.Text))
                 return;
 
-            // Generate body
-            var body = $"The new IP address is {ip}.\nThe full IP list is:";
-            ipList.ForEach(ip => body += $"\n{ip}");
-
             // Publish IP address
             var message = new MailMessage();
             var smtp = new SmtpClient();
             message.From = new MailAddress(usernameEntry.Text);
             message.To.Add(new MailAddress(usernameEntry.Text));
             message.Subject = "[IP] New address";
-            message.Body = body;
+            message.Body = $"The new IP address is {ip}.";
             smtp.Port = 587;
             smtp.Host = "smtp.gmail.com"; //for gmail host  
             smtp.EnableSsl = true;
@@ -93,6 +92,7 @@ public partial class MainPage : ContentPage
 		catch (Exception ex)
         {
 			await App.Current.MainPage.DisplayAlert("Error", ex.Message, "Ok");
+            previousIP = null;
         }
     }
 
