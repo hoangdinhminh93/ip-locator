@@ -8,18 +8,33 @@ namespace IPLocator;
 public partial class MainPage : ContentPage
 {
     private bool showCredential = false;
-    private string previousIP;
+
+    private string currentIP;
+    private string CurrentIP
+    {
+        get => currentIP;
+        set
+        {
+            var ipChanged = currentIP != value && !string.IsNullOrEmpty(value);
+            currentIP = value;
+
+            if (ipChanged)
+            {
+                Task.Run(SendIP);
+            }
+        }
+    }
 
 	public MainPage()
 	{
 		InitializeComponent();
         UpdateCredential();
-        Connectivity.ConnectivityChanged += (o, e) => GetAndUpdateIP();
+        Connectivity.ConnectivityChanged += async (o, e) => await GetIP();
         Task.Run(async () =>
         {
             while (true)
             {
-                GetAndUpdateIP();
+                await GetIP();
                 await Task.Delay(new TimeSpan(0, 15, 0));
             }
         });
@@ -31,9 +46,14 @@ public partial class MainPage : ContentPage
         UpdateCredential();
     }
 
-    private void OnRefreshClicked(object sender, EventArgs e)
+    private async void OnSendClicked(object sender, EventArgs e)
+    {
+        await SendIP();
+    }
+
+    private async void OnRefreshClicked(object sender, EventArgs e)
 	{
-		GetAndUpdateIP();
+		await GetIP();
     }
 
     private void UpdateCredential()
@@ -42,36 +62,29 @@ public partial class MainPage : ContentPage
         credentialButton.Text = showCredential ? "Save" : "Change";
     }
 
-	private async void GetAndUpdateIP()
+	private async Task GetIP()
     {
 		try
         {
-            // Check internet connectivity
-            if (Connectivity.Current.NetworkAccess != NetworkAccess.Internet)
-            {
-                previousIP = null;
-                return;
-            }
-
             // Get IP
             var ipList = GetIP(NetworkInterfaceType.Wireless80211);
             var ip = ipList.FirstOrDefault();
 
             // Show IP to UI
-			if (ip == null)
-            {
-                ipLabel.Text = "Unknown";
-                return;
-            }
-            ipLabel.Text = ip;
+            ipLabel.Text = CurrentIP = ip;
+        }
+		catch (Exception ex)
+        {
+            await HandleException(ex);
+        }
+    }
 
-            // Check previous ip
-            if (previousIP == ip)
-                return;
-            previousIP = ip;
-
+    private async Task SendIP()
+    {
+        try
+        {
             // Check username and password for publishing
-            if (string.IsNullOrEmpty(usernameEntry.Text) || string.IsNullOrEmpty(passwordEntry.Text))
+            if (string.IsNullOrEmpty(usernameEntry.Text) || string.IsNullOrEmpty(passwordEntry.Text) || string.IsNullOrEmpty(CurrentIP))
                 return;
 
             // Publish IP address
@@ -80,19 +93,18 @@ public partial class MainPage : ContentPage
             message.From = new MailAddress(usernameEntry.Text);
             message.To.Add(new MailAddress(usernameEntry.Text));
             message.Subject = "[IP] New address";
-            message.Body = $"The new IP address is {ip}.";
+            message.Body = $"The new IP address is {CurrentIP}.";
             smtp.Port = 587;
-            smtp.Host = "smtp.gmail.com"; //for gmail host  
+            smtp.Host = "smtp.gmail.com";
             smtp.EnableSsl = true;
             smtp.UseDefaultCredentials = false;
             smtp.Credentials = new NetworkCredential(usernameEntry.Text, passwordEntry.Text);
             smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
             smtp.Send(message);
         }
-		catch (Exception ex)
+        catch (Exception ex)
         {
-			await App.Current.MainPage.DisplayAlert("Error", ex.Message, "Ok");
-            previousIP = null;
+            await HandleException(ex);
         }
     }
 
@@ -102,4 +114,10 @@ public partial class MainPage : ContentPage
 		.Where(x => x.Address.AddressFamily == AddressFamily.InterNetwork)
 		.Select(x => x.Address.ToString())
 		.ToList();
+
+    private async Task HandleException(Exception ex)
+    {
+        CurrentIP = null;
+        await App.Current.MainPage.DisplayAlert("Error", ex.Message, "Ok");
+    }
 }
