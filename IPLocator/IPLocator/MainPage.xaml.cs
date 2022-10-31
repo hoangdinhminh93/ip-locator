@@ -8,6 +8,7 @@ namespace IPLocator;
 public partial class MainPage : ContentPage
 {
     private bool showCredential = false;
+    private bool isSending;
 
     private string currentIP;
     private string CurrentIP
@@ -40,10 +41,23 @@ public partial class MainPage : ContentPage
         });
     }
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        usernameEntry.Text = Preferences.Get("username", null);
+        passwordEntry.Text = Preferences.Get("password", null);
+    }
+
     private void OnCredentialButtonClicked(object sender, EventArgs e)
     {
         showCredential = !showCredential;
         UpdateCredential();
+
+        if (!showCredential)
+        {
+            Preferences.Set("username", usernameEntry.Text);
+            Preferences.Set("password", passwordEntry.Text);
+        }
     }
 
     private async void OnSendClicked(object sender, EventArgs e)
@@ -84,8 +98,12 @@ public partial class MainPage : ContentPage
         try
         {
             // Check username and password for publishing
-            if (string.IsNullOrEmpty(usernameEntry.Text) || string.IsNullOrEmpty(passwordEntry.Text) || string.IsNullOrEmpty(CurrentIP))
+            if (string.IsNullOrEmpty(usernameEntry.Text) || string.IsNullOrEmpty(passwordEntry.Text) || string.IsNullOrEmpty(CurrentIP) || isSending)
                 return;
+            isSending = true;
+
+            // Wait to avoid duplication
+            await Task.Delay(500);
 
             // Publish IP address
             var message = new MailMessage();
@@ -101,10 +119,14 @@ public partial class MainPage : ContentPage
             smtp.Credentials = new NetworkCredential(usernameEntry.Text, passwordEntry.Text);
             smtp.DeliveryMethod = SmtpDeliveryMethod.Network;
             smtp.Send(message);
+
+            // Revert flag
+            isSending = false;
         }
         catch (Exception ex)
         {
             await HandleException(ex);
+            isSending = false;
         }
     }
 
